@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>מי רוצה להיות יסודותי?</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a2e;
+            --accent-purple: #4a148c;
+            --yesodot-blue: #0d47a1;
+            --gold: #ffd700;
+            --white: #ffffff;
+            --correct: #2e7d32;
+            --wrong: #c62828;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle, var(--accent-purple) 0%, var(--primary-bg) 100%);
+            color: var(--white);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .logo-area {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+            color: var(--gold);
+        }
+
+        .question-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--yesodot-blue);
+            padding: 30px;
+            border-radius: 50px;
+            margin-bottom: 30px;
+            font-size: 1.5em;
+            box-shadow: 0 0 20px rgba(13, 71, 161, 0.5);
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .answer-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--white);
+            padding: 15px;
+            border-radius: 25px;
+            color: var(--white);
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: right;
+        }
+
+        .answer-btn:hover {
+            background: var(--yesodot-blue);
+            border-color: var(--gold);
+        }
+
+        .answer-btn.selected {
+            background: var(--gold);
+            color: black;
+        }
+
+        .answer-btn.correct {
+            background: var(--correct) !important;
+        }
+
+        .answer-btn.wrong {
+            background: var(--wrong) !important;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--gold);
+        }
+
+        .prize {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        #start-btn {
+            padding: 20px 50px;
+            font-size: 2em;
+            background: var(--gold);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="info-panel" id="info">
+    <div>שלב: <span id="current-step">0</span>/15</div>
+    <div>סטטוס: <span class="prize" id="status">לפני תחילת מסע</span></div>
+</div>
+
+<div id="game-container">
+    <div class="logo-area">מי רוצה להיות יסודותי?</div>
+    
+    <div id="start-screen">
+        <p>ברוכים הבאים למסע בירור הזהות של ארגון יסודות.</p>
+        <button id="start-btn" onclick="startGame()">התחל בבירור</button>
+    </div>
+
+    <div id="quiz-screen" style="display:none;">
+        <div class="question-box" id="question-text">טוען שאלה...</div>
+        <div class="answers-grid">
+            <button class="answer-btn" id="btn0" onclick="checkAnswer(0)">א. </button>
+            <button class="answer-btn" id="btn1" onclick="checkAnswer(1)">ב. </button>
+            <button class="answer-btn" id="btn2" onclick="checkAnswer(2)">ג. </button>
+            <button class="answer-btn" id="btn3" onclick="checkAnswer(3)">ד. </button>
+        </div>
+    </div>
+</div>
+
+<audio id="bg-music" loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    const questions = [
+        { q: "מהו האירוע המכונן שהוביל להקמת ארגון 'יסודות' ב-1995?", a: ["חתימת הסכמי אוסלו", "רצח ראש הממשלה יצחק רבין", "הקמת החמ\"ד", "המהפך הפוליטי ב-1977"], c: 1 },
+        { q: "מהו 'המקף' בשפה של 'יסודות'?", a: ["הפרדה בין דת למדינה", "חיבור טכני בין מילים", "החיבור המהותי שבין יהודית לדמוקרטית", "סימן פיסוק בלבד"], c: 2 },
+        { q: "לאיזה מוסד אקדמי משתייך ארגון 'יסודות' כזרוע גמישה ועצמאית?", a: ["אוניברסיטת בר אילן", "מכללת ליפשיץ", "מכללת הרצוג", "מכון מנדל"], c: 2 },
+        { q: "מהי תנועת הנפש המרכזית ש'יסודות' מבקש לעודד?", a: ["נעשה ונשמע", "צא ולמד", "דין ודברים", "הלכה למעשה"], c: 1 },
+        { q: "מהי מטרת 'מסעות ההקשבה' של הארגון?", a: ["שכנוע בצדקת הדרך", "בירור זהות והקשבה עמוקה לעמדות מגוונות", "טיול שנתי למורים", "הכרת הארץ בלבד"], c: 1 },
+        { q: "מהו השם שניתן לתוכניות ההמשך הבית-ספריות למנהלים שחוו את המסע?", a: ["סמינרים", "קהילות מקצועיות", "מסעונים", "מעגלי שיח"], c: 2 },
+        { q: "באיזה כלי תוכן משתמשים כדי להציג זווית ראייה הפוכה ומפתיעה?", a: ["במאי קמיפלגי", "רואה חושב שואל", "איפכא מסתברא", "סוד הצמצום"], c: 2 },
+        { q: "איזה דמות נבחרה כ'דמות השנה' של החמ\"ד לשנת תשפ\"ו, עליה הוציא הארגון חוברת?", a: ["הרב קוק", "הרב יוסף משאש", "הרבנית הרצוג", "הרב עובדיה יוסף"], c: 1 },
+        { q: "מהי מטרת תוכנית 'מחברים בין העולמות'?", a: ["גישור בין דתיים לחילונים דרך צוותי חינוך שכנים", "חיבור בין יהדות התפוצות לישראל", "לימוד גמרא למתחילים", "פרויקט של משרד החוץ"], c: 0 },
+        { q: "איזה אישור רשמי קיבל הארגון לאחרונה מהמזכירות הפדגוגית?", a: ["אישור לניהול בתי ספר", "ספק תוכן מאושר לכתיבת תוכניות חינוכיות מוכרות", "פרס החינוך הדתי", "אישור לקיים הפגנות"], c: 1 },
+        { q: "מה נמצא בקוטב ההפוך ל'התבצרות ווכחנות' בתיאוריית השינוי שלנו?", a: ["ויתור על הזהות", "מרחב של הקשבה, שייכות ולמידה משותפת", "הסכמה פוליטית רחבה", "שתיקה"], c: 1 },
+        { q: "כיצד מכונה המתח שבין הייחודיות האישית למחויבות הציבורית?", a: ["בין קודש לחול", "אנא ואנו (רשות היחיד והרבים)", "שורשים וכנפיים", "היד על ההגה"], c: 1 },
+        { q: "מהו 'מסע אמיצים'?", a: ["מסע הישרדות בשטח", "מפגש בין אנשי חינוך מקהילות שונות ובעלי תפיסות מנוגדות", "קורס טיס צבאי", "תוכנית למנהלים פורשים"], c: 1 },
+        { q: "באיזו מסכת בגמרא עסק הארגון השנה בדגש על 'תורה ומדינה'?", a: ["מסכת ברכות", "מסכת בבא קמא", "מסכת קידושין", "מסכת שבת"], c: 1 },
+        { q: "מהו אחד הלקחים החינוכיים מ-7 באוקטובר לפי הארגון?", a: ["הגדלת מספר המבחנים", "הצורך לגדל דור שאינו נרתע מלשאול שאלות", "חיזוק לימודי המתמטיקה", "ביטול לימודי האזרחות"], c: 1 }
+    ];
+
+    let currentQ = 0;
+
+    function speak(text) {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'he-IL';
+        window.speechSynthesis.speak(msg);
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        document.getElementById('bg-music').play();
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        const qData = questions[currentQ];
+        document.getElementById('question-text').innerText = qData.q;
+        document.getElementById('current-step').innerText = currentQ + 1;
+        document.getElementById('status').innerText = "בירור בהתהוות...";
+        
+        for (let i = 0; i < 4; i++) {
+            const btn = document.getElementById('btn' + i);
+            btn.innerText = (i === 0 ? "א. " : i === 1 ? "ב. " : i === 2 ? "ג. " : "ד. ") + qData.a[i];
+            btn.className = 'answer-btn';
+            btn.disabled = false;
+        }
+
+        speak(qData.q);
+    }
+
+    function checkAnswer(index) {
+        const correct = questions[currentQ].c;
+        const btns = document.querySelectorAll('.answer-btn');
+        
+        btns.forEach(b => b.disabled = true);
+
+        if (index === correct) {
+            document.getElementById('btn' + index).classList.add('correct');
+            document.getElementById('status').innerText = "תשובה נכונה! ממשיכים בבירור.";
+            setTimeout(() => {
+                currentQ++;
+                if (currentQ < questions.length) {
+                    loadQuestion();
+                } else {
+                    finishGame();
+                }
+            }, 2000);
+        } else {
+            document.getElementById('btn' + index).classList.add('wrong');
+            document.getElementById('btn' + correct).classList.add('correct');
+            document.getElementById('status').innerText = "טעות. הזהות דורשת לימוד נוסף.";
+            setTimeout(() => {
+                alert("המשחק נגמר. חזרו ללמוד ב'יסודות'!");
+                location.reload();
+            }, 3000);
+        }
+    }
+
+    function finishGame() {
+        document.getElementById('quiz-screen').innerHTML = "<h1>כל הכבוד! אתם יסודותיים אמיתיים!</h1><p>החזקתם את המורכבות בהצלחה.</p>";
+        speak("כל הכבוד! אתם יסודותיים אמיתיים! החזקתם את המורכבות בהצלחה.");
+    }
+</script>
+
+</body>
+</html>
